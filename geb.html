@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Shadow Art Studio</title>
+    <style>
+      body {
+        margin: 0;
+        overflow: hidden;
+        background: black;
+      }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dat.gui/build/dat.gui.min.js"></script>
+  </head>
+  <body>
+    <script>
+      // 🚀 1. 기본 설정 (씬, 카메라, 렌더러)
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(
+        75,
+        window.innerWidth / window.innerHeight,
+        0.1,
+        100
+      );
+      camera.position.set(0, 3, 5);
+      camera.lookAt(0, 0, 0);
+
+      const renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.shadowMap.enabled = true;
+      document.body.appendChild(renderer.domElement);
+
+      // 🚀 2. 배경을 검게 설정
+      scene.background = new THREE.Color(0x0990A0);
+
+      // 🚀 3. 바닥 및 벽 추가 (세 개의 면)
+      const material = new THREE.MeshStandardMaterial({ color: 0x707070, side: THREE.DoubleSide });
+
+      const floor = new THREE.Mesh(new THREE.PlaneGeometry(5, 5), material);
+      floor.rotation.x = -Math.PI / 2;
+      floor.position.y = 0;
+      scene.add(floor);
+
+      const backWall = new THREE.Mesh(new THREE.PlaneGeometry(5, 5), material);
+      backWall.position.z = -2;
+      scene.add(backWall);
+
+      const sideWall = new THREE.Mesh(new THREE.PlaneGeometry(5, 5), material);
+      sideWall.rotation.y = Math.PI / 2;
+      sideWall.position.x = 0;
+      scene.add(sideWall);
+
+      // 🚀 4. 광원 추가
+      const topLight = new THREE.DirectionalLight(0xffffff, 1);
+      topLight.position.set(0, 5, 0);
+      topLight.castShadow = true;
+      scene.add(topLight);
+
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.2);
+      scene.add(ambientLight);
+      ambientLight.visible = false;
+
+      // 🚀 5. GUI 설정 (전체광원 체크박스)
+      const gui = new dat.GUI();
+      const lightFolder = gui.addFolder("Light Controls");
+      lightFolder.add(ambientLight, "visible").name("Enable Ambient Light");
+      lightFolder.open();
+
+      // 🚀 6. 마우스 인터랙션 추가 (바닐라 JS로 직접 구현)
+      let isDragging = false;
+      let isMiddleButton = false;
+      let previousMousePosition = { x: 0, y: 0 };
+
+      function onMouseDown(event) {
+        if (event.button === 0) isDragging = true; // 좌클릭 드래그 (카메라 회전)
+        if (event.button === 1) isMiddleButton = true; // 휠 버튼 드래그 (카메라 이동)
+        previousMousePosition = { x: event.clientX, y: event.clientY };
+      }
+
+      function onMouseUp(event) {
+        if (event.button === 0) isDragging = false;
+        if (event.button === 1) isMiddleButton = false;
+      }
+
+      function onMouseMove(event) {
+        const deltaX = event.clientX - previousMousePosition.x;
+        const deltaY = event.clientY - previousMousePosition.y;
+
+        if (isDragging) {
+          // 🚀 좌클릭 드래그 → 카메라 회전
+          const rotationSpeed = 0.005;
+          camera.position.x -= deltaX * rotationSpeed;
+          camera.position.y += deltaY * rotationSpeed;
+          camera.lookAt(0, 0, 0);
+        }
+
+        if (isMiddleButton) {
+          // 🚀 휠 버튼 드래그 → 카메라 이동
+          const moveSpeed = 0.02;
+          camera.position.x -= deltaX * moveSpeed;
+          camera.position.y += deltaY * moveSpeed;
+        }
+
+        previousMousePosition = { x: event.clientX, y: event.clientY };
+      }
+
+      function onWheel(event) {
+        // 🚀 휠 스크롤 → 줌 인/아웃
+        const zoomSpeed = 0.01;
+        const direction = new THREE.Vector3();
+        camera.getWorldDirection(direction);
+        camera.position.addScaledVector(direction, event.deltaY * zoomSpeed);
+      }
+
+      window.addEventListener("mousedown", onMouseDown);
+      window.addEventListener("mouseup", onMouseUp);
+      window.addEventListener("mousemove", onMouseMove);
+      window.addEventListener("wheel", onWheel);
+
+      // 🚀 7. 애니메이션 루프
+      function animate() {
+        requestAnimationFrame(animate);
+        renderer.render(scene, camera);
+      }
+      animate();
+    </script>
+  </body>
+</html>
